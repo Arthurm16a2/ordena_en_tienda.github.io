@@ -3,540 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Pedidos QR - Restaurante Express</title>
-    <!-- Tailwind CSS CDN para un diseño moderno y responsive -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QRCode.js para generar códigos QR fácilmente -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Estilos personalizados para el ticket */
-        .ticket-border {
-            background-image: radial-gradient(circle, transparent 0, transparent 4px, #ffffff 4px, #ffffff 100%);
-            background-size: 12px 12px;
-            background-position: bottom;
-        }
-    </style>
+    <title>QR Express Food</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
+<body>
 
-    <!-- Navegación Superior -->
-    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid font-bold text-xl fa-utensils text-yellow-400"></i>
-                <h1 class="font-bold text-lg md:text-xl tracking-tight">QR Express Food</h1>
-            </div>
-            
-            <!-- Selector de Modos / Vistas -->
-            <div class="flex bg-indigo-800 p-1 rounded-xl text-xs md:text-sm font-medium">
-                <button id="nav-cliente" onclick="switchTab('cliente')" class="px-3 py-1.5 rounded-lg bg-white text-indigo-900 font-semibold shadow transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-mobile-screen"></i>
-                    <span>Cliente (Pedir)</span>
-                </button>
-                <button id="nav-cocina" onclick="switchTab('cocina')" class="px-3 py-1.5 rounded-lg text-indigo-200 hover:text-white transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-kitchen-set"></i>
-                    <span>Cocina (Ver QR)</span>
-                </button>
-            </div>
+    <header>
+        <div class="header-container">
+            <h1>QR Express Food</h1>
         </div>
     </header>
 
-    <!-- Banner Informativo -->
-    <div id="url-alert-banner" class="hidden bg-amber-500 text-white text-center text-xs py-2 px-4 shadow-inner flex justify-between items-center">
-        <span><i class="fa-solid fa-circle-info mr-1"></i> Se ha cargado un pedido desde la URL escaneada.</span>
-        <button onclick="switchTab('cocina')" class="underline font-bold bg-amber-600 px-2 py-0.5 rounded text-[11px]">Ver Orden</button>
-    </div>
-
-    <!-- Contenido Principal -->
-    <main class="max-w-4xl mx-auto w-full p-4 flex-grow">
-
-        <!-- ==================== VISTA CLIENTE ==================== -->
-        <section id="sec-cliente" class="space-y-6">
-            <!-- Encabezado de la Sección -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-burger text-indigo-600"></i>
-                    Menú de Paquetes
-                </h2>
-                <p class="text-xs text-slate-500 mt-1">Selecciona tus combos favoritos y genera el QR para mostrarlo en el mostrador.</p>
+    <main class="main-container">
+        <!-- Sección del Menú y Carrito -->
+        <section class="card-section">
+            <div class="section-header">
+                <h2>Menú de Paquetes</h2>
+                <p>Selecciona tus combos favoritos y genera el QR para mostrarlo en el mostrador.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="content-grid">
+                <!-- Contenedor dinámico del Menú generado por JS -->
+                <div id="menu-container" class="menu-items"></div>
 
-                <!-- Columna Izquierda: Lista de Menú -->
-                <div class="md:col-span-2 space-y-4" id="menu-container">
-                    <!-- Los paquetes se renderizan dinámicamente con JS -->
-                </div>
-
-                <!-- Columna Derecha: Carrito de Compras -->
-                <div class="md:col-span-1">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sticky top-20">
-                        <div class="flex justify-between items-center border-b pb-3 mb-3">
-                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-cart-shopping text-indigo-600"></i>
-                                Tu Carrito
-                            </h3>
-                            <span id="cart-count" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-0.5 rounded-full">0 ítems</span>
-                        </div>
-
-                        <!-- Lista de productos en carrito -->
-                        <div id="cart-items" class="space-y-3 max-h-60 overflow-y-auto pr-1 text-sm">
-                            <p class="text-center text-slate-400 py-6 text-xs italic">El carrito está vacío</p>
-                        </div>
-
-                        <!-- Total y Botón -->
-                        <div class="border-t pt-3 mt-3 space-y-3">
-                            <div class="flex justify-between items-center font-bold text-slate-800 text-lg">
-                                <span>Total:</span>
-                                <span id="cart-total" class="text-indigo-600">$0.00</span>
-                            </div>
-
-                            <button id="btn-generate-qr" onclick="generateQR()" disabled class="w-full py-3 bg-slate-300 text-slate-500 font-bold rounded-xl shadow-md transition duration-200 flex justify-center items-center gap-2 cursor-not-allowed">
-                                <i class="fa-solid fa-qrcode"></i>
-                                Generar Orden QR
-                            </button>
-                        </div>
+                <!-- Carrito -->
+                <div class="cart-box">
+                    <h3>Tu Carrito</h3>
+                    <span id="cart-count">0 ítems</span>
+                    <div id="cart-items" class="cart-items-list">
+                        <p class="empty-text">El carrito está vacío</p>
                     </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- ==================== VISTA COCINA ==================== -->
-        <section id="sec-cocina" class="hidden space-y-6">
-            <!-- Encabezado de Cocina -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-receipt text-indigo-600"></i>
-                        Recepción y Cocina
-                    </h2>
-                    <p class="text-xs text-slate-500 mt-1">Escanea o ingresa el código generado para ver el detalle de la orden.</p>
-                </div>
-
-                <!-- Input manual / Simulador de escaneo -->
-                <div class="flex gap-2">
-                    <input type="text" id="manual-url-input" placeholder="Pegar URL o código QR..." class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64">
-                    <button onclick="readManualCode()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-700 transition">
-                        Cargar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Contenedor del Pedido Leído -->
-            <div class="max-w-md mx-auto">
-                <div id="order-card-empty" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center space-y-3">
-                    <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto text-indigo-500 text-2xl">
-                        <i class="fa-solid fa-qrcode"></i>
+                    <div class="cart-total">
+                        <span>Total:</span>
+                        <span id="cart-total-price">$0.00</span>
                     </div>
-                    <h3 class="font-bold text-slate-700">Sin orden cargada</h3>
-                    <p class="text-xs text-slate-400">Escanea el código QR del cliente o presiona "Simular Lectura" desde el menú del cliente.</p>
-                </div>
-
-                <!-- Ticket de la Orden (Oculto por defecto) -->
-                <div id="order-card-content" class="hidden bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden relative">
-                    <!-- Banda Superior Estado -->
-                    <div id="status-bar" class="bg-amber-500 text-white px-4 py-2 text-xs font-bold flex justify-between items-center tracking-wider uppercase">
-                        <span><i class="fa-solid fa-clock mr-1"></i> Orden Pendiente</span>
-                        <span id="order-timestamp">--:--</span>
-                    </div>
-
-                    <div class="p-6 space-y-4">
-                        <div class="text-center border-b pb-4">
-                            <h3 class="font-extrabold text-slate-800 text-xl tracking-tight">PEDIDO REGISTRADO</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Mesa / Llévese #<span id="order-id">---</span></p>
-                        </div>
-
-                        <!-- Lista de productos ordenados -->
-                        <div class="space-y-3 py-2">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalle del Consumo:</h4>
-                            <div id="kitchen-items-list" class="space-y-2 text-sm divide-y divide-slate-100">
-                                <!-- Elementos insertados dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Total -->
-                        <div class="border-t border-b py-3 flex justify-between items-center font-extrabold text-lg text-slate-800">
-                            <span>TOTAL A COBRAR:</span>
-                            <span id="kitchen-total" class="text-indigo-600">$0.00</span>
-                        </div>
-
-                        <!-- Botones de Acción Cocina -->
-                        <div class="pt-2 space-y-2">
-                            <button id="btn-complete-order" onclick="markAsCompleted()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition duration-200 flex justify-center items-center gap-2">
-                                <i class="fa-solid fa-check"></i>
-                                Marcar como Atendido
-                            </button>
-                            <button onclick="clearKitchenOrder()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-xs rounded-lg transition">
-                                Limpiar Pantalla
-                            </button>
-                        </div>
-                    </div>
+                    <button id="btn-generate-order" class="btn-primary" disabled>Generar Orden y QR</button>
                 </div>
             </div>
         </section>
 
+        <!-- Sección de Recepción y Cocina con opción de Edición -->
+        <section class="card-section">
+            <div class="section-header">
+                <h2>Recepción y Cocina</h2>
+                <p>Visualiza, edita el pedido actual y gestiona las órdenes de la cocina.</p>
+            </div>
+
+            <div class="kitchen-box">
+                <div id="kitchen-empty" class="empty-state">
+                    <h3>Sin orden cargada</h3>
+                    <p>Genera una orden desde el menú para visualizarla y editarla aquí.</p>
+                </div>
+
+                <div id="kitchen-order-details" class="order-details hidden">
+                    <div class="order-status-bar">
+                        <span class="badge" id="order-status-badge">Orden Pendiente</span>
+                        <span id="order-time">--:--</span>
+                    </div>
+                    
+                    <div class="order-info">
+                        <h3 id="kitchen-order-title">PEDIDO REGISTRADO</h3>
+                        <p>Mesa / Llévese #<span id="kitchen-table-id">---</span></p>
+                    </div>
+
+                    <div class="order-consumption">
+                        <h4>Detalle del Consumo:</h4>
+                        <ul id="kitchen-items-list"></ul>
+                    </div>
+
+                    <div class="order-total-bar">
+                        <span>TOTAL A COBRAR:</span>
+                        <span id="kitchen-total-price">$0.00</span>
+                    </div>
+
+                    <!-- Botones de Acción y Edición de Cocina -->
+                    <div class="kitchen-actions">
+                        <button id="btn-edit-order" class="btn-secondary">✏️ Editar Pedido</button>
+                        <button id="btn-complete-order" class="btn-success">✅ Marcar como Completado</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- MODAL DE CÓDIGO QR GENERADO -->
-    <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4 transform transition-all">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-qrcode text-indigo-600"></i>
-                    Código QR de tu Orden
-                </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+    <!-- Modal para el Código QR -->
+    <div id="qr-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Código QR de tu Orden</h3>
+            <p>Muestra este código en el mostrador o caja para procesar tu pedido.</p>
+            <div class="qr-placeholder" id="qrcode">
+                <!-- Aquí se puede renderizar la imagen del QR o representación -->
+                <div class="qr-mock">QR CODE READY</div>
             </div>
-
-            <p class="text-xs text-slate-500">Muestra este código en el mostrador o caja para procesar tu pedido.</p>
-
-            <!-- Contenedor donde se dibuja el QR -->
-            <div class="flex justify-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                <div id="qrcode" class="p-2 bg-white rounded-lg shadow-sm"></div>
-            </div>
-
-            <!-- Vista previa de la URL codificada -->
-            <div class="text-left bg-slate-100 p-2.5 rounded-xl text-[11px] font-mono text-slate-600 break-all max-h-16 overflow-y-auto">
-                <span class="font-bold block text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">URL Codificada:</span>
-                <span id="qr-url-preview">...</span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-2">
-                <button onclick="copyQRLink()" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1">
-                    <i class="fa-regular fa-copy"></i>
-                    Copiar URL
-                </button>
-                <button onclick="simulateScan()" class="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow transition flex items-center justify-center gap-1">
-                    <i class="fa-solid fa-kitchen-set"></i>
-                    Ver en Cocina
-                </button>
-            </div>
+            <span class="url-encoded" id="url-encoded-text">URL Codificada: ...</span>
+            <button id="btn-close-modal" class="btn-primary">Cerrar</button>
         </div>
     </div>
 
-    <!-- JS Principal con la Lógica -->
-    <script>
-        // 1. BASE DE DATOS LOCAL DE MENÚ/PAQUETES (Estructura ligera de datos)
-        const MENU = [
-            {
-                id: 'p1',
-                nombre: 'Paquete 1: Combo Hamburguesa',
-                descripcion: 'Hamburguesa doble queso + Papas a la francesa + Refresco 500ml',
-                precio: 120.00,
-                icono: 'fa-burger'
-            },
-            {
-                id: 'p2',
-                nombre: 'Paquete 2: Combo Tacos Tradicional',
-                descripcion: '3 Tacos al pastor con verdura + Bebida de sabor o agua fresca',
-                precio: 95.00,
-                icono: 'fa-utensils'
-            },
-            {
-                id: 'p3',
-                nombre: 'Paquete 3: Combo Pizza Personal',
-                descripcion: 'Pizza individual (2 ingredientes) + Papas en gajo + Refresco',
-                precio: 140.00,
-                icono: 'fa-pizza-slice'
-            },
-            {
-                id: 'p4',
-                nombre: 'Paquete 4: Combo Ensalada & Wrap',
-                descripcion: 'Wrap de Pollo + Ensalada fresca + Agua del día',
-                precio: 110.00,
-                icono: 'fa-carrot'
-            }
-        ];
-
-        // Estado Global del Carrito
-        let cart = {};
-        let generatedURL = '';
-
-        // 2. INICIALIZACIÓN
-        document.addEventListener('DOMContentLoaded', () => {
-            renderMenu();
-            checkURLParams(); // Verifica si entramos escaneando un QR
-        });
-
-        // Renderizar el menú interactivo
-        function renderMenu() {
-            const container = document.getElementById('menu-container');
-            container.innerHTML = MENU.map(pkg => `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col justify-between hover:border-indigo-200 transition-all">
-                    <div class="flex items-start gap-3">
-                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl shrink-0">
-                            <i class="fa-solid ${pkg.icono}"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-slate-800 text-sm md:text-base">${pkg.nombre}</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">${pkg.descripcion}</p>
-                            <span class="inline-block mt-2 font-extrabold text-indigo-600 text-base">$${pkg.precio.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end items-center gap-2 mt-3 pt-3 border-t border-slate-100">
-                        <button onclick="updateQuantity('${pkg.id}', -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-600 flex items-center justify-center transition">-</button>
-                        <span id="qty-${pkg.id}" class="w-8 text-center font-bold text-sm">0</span>
-                        <button onclick="updateQuantity('${pkg.id}', 1)" class="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 font-bold text-white flex items-center justify-center transition">+</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Modificar cantidades
-        function updateQuantity(id, change) {
-            const currentQty = cart[id] || 0;
-            const newQty = Math.max(0, currentQty + change);
-
-            if (newQty === 0) {
-                delete cart[id];
-            } else {
-                cart[id] = newQty;
-            }
-
-            // Actualizar número en la UI del menú
-            const qtyElement = document.getElementById(`qty-${id}`);
-            if (qtyElement) qtyElement.innerText = newQty;
-
-            renderCart();
-        }
-
-        // Renderizar el carrito de compras
-        function renderCart() {
-            const cartContainer = document.getElementById('cart-items');
-            const totalElement = document.getElementById('cart-total');
-            const countElement = document.getElementById('cart-count');
-            const btnQR = document.getElementById('btn-generate-qr');
-
-            const itemKeys = Object.keys(cart);
-            let total = 0;
-            let totalItems = 0;
-
-            if (itemKeys.length === 0) {
-                cartContainer.innerHTML = `<p class="text-center text-slate-400 py-6 text-xs italic">El carrito está vacío</p>`;
-                totalElement.innerText = '$0.00';
-                countElement.innerText = '0 ítems';
-                btnQR.disabled = true;
-                btnQR.className = "w-full py-3 bg-slate-200 text-slate-400 font-bold rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed";
-                return;
-            }
-
-            cartContainer.innerHTML = itemKeys.map(key => {
-                const pkg = MENU.find(m => m.id === key);
-                const subtotal = pkg.precio * cart[key];
-                total += subtotal;
-                totalItems += cart[key];
-
-                return `
-                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl text-xs">
-                        <div class="truncate pr-2">
-                            <span class="font-bold text-slate-700 block truncate">${pkg.nombre}</span>
-                            <span class="text-slate-400">${cart[key]}x $${pkg.precio.toFixed(2)}</span>
-                        </div>
-                        <span class="font-bold text-indigo-600 shrink-0">$${subtotal.toFixed(2)}</span>
-                    </div>
-                `;
-            }).join('');
-
-            totalElement.innerText = `$${total.toFixed(2)}`;
-            countElement.innerText = `${totalItems} ítem${totalItems > 1 ? 's' : ''}`;
-
-            // Habilitar botón de QR
-            btnQR.disabled = false;
-            btnQR.className = "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition duration-200 flex justify-center items-center gap-2 cursor-pointer";
-        }
-
-        // 3. GENERACIÓN DEL CÓDIGO QR
-        function generateQR() {
-            if (Object.keys(cart).length === 0) return;
-
-            // Compactamos el pedido en un formato JSON ligero
-            // Ejemplo de estructura: {"p1":2, "p3":1}
-            const encodedOrder = encodeURIComponent(JSON.stringify(cart));
-            
-            // Creamos la URL completa agregando el parámetro ?orden=...
-            const baseURL = window.location.origin + window.location.pathname;
-            generatedURL = `${baseURL}?orden=${encodedOrder}`;
-
-            // Limpiar QR previo
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-
-            // Generar nuevo código QR con QRCode.js
-            new QRCode(qrContainer, {
-                text: generatedURL,
-                width: 180,
-                height: 180,
-                colorDark : "#1e1b4b",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
-
-            // Mostrar URL en la vista previa
-            document.getElementById('qr-url-preview').innerText = generatedURL;
-
-            // Abrir Modal
-            document.getElementById('qr-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('qr-modal').classList.add('hidden');
-        }
-
-        function copyQRLink() {
-            // Copiar enlace usando execCommand para compatibilidad con iFrames
-            const tempInput = document.createElement('input');
-            tempInput.value = generatedURL;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-
-            alert('¡Enlace copiado al portapapeles!');
-        }
-
-        // Simula la lectura en la misma pantalla para pruebas
-        function simulateScan() {
-            closeModal();
-            switchTab('cocina');
-            parseOrderData(cart);
-        }
-
-        // 4. RECEPCIÓN Y LECTURA DE LA ORDEN (COCINA)
-        function checkURLParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const ordenParam = urlParams.get('orden');
-
-            if (ordenParam) {
-                try {
-                    const parsedCart = JSON.parse(decodeURIComponent(ordenParam));
-                    // Mostrar aviso en la parte superior
-                    document.getElementById('url-alert-banner').classList.remove('hidden');
-                    // Cargar la orden en la cocina
-                    parseOrderData(parsedCart);
-                } catch (e) {
-                    console.error("Error al decodificar la orden de la URL", e);
-                }
-            }
-        }
-
-        function readManualCode() {
-            const inputVal = document.getElementById('manual-url-input').value.trim();
-            if (!inputVal) return;
-
-            try {
-                let jsonStr = '';
-                // Si es una URL completa, extraemos el parámetro "orden"
-                if (inputVal.includes('orden=')) {
-                    const url = new URL(inputVal.startsWith('http') ? inputVal : `http://${inputVal}`);
-                    jsonStr = url.searchParams.get('orden');
-                } else {
-                    // Si pegaron directamente el JSON o encoded string
-                    jsonStr = inputVal;
-                }
-
-                const parsedCart = JSON.parse(decodeURIComponent(jsonStr));
-                parseOrderData(parsedCart);
-                document.getElementById('manual-url-input').value = '';
-            } catch (e) {
-                alert('No se pudo decodificar la orden. Verifica que el código o la URL sean válidos.');
-            }
-        }
-
-        function parseOrderData(orderObj) {
-            const containerList = document.getElementById('kitchen-items-list');
-            const totalElement = document.getElementById('kitchen-total');
-            const orderIdElement = document.getElementById('order-id');
-            const timeElement = document.getElementById('order-timestamp');
-
-            containerList.innerHTML = '';
-            let total = 0;
-
-            const keys = Object.keys(orderObj);
-            if (keys.length === 0) return;
-
-            keys.forEach(key => {
-                const pkg = MENU.find(m => m.id === key);
-                if (pkg) {
-                    const qty = orderObj[key];
-                    const subtotal = pkg.precio * qty;
-                    total += subtotal;
-
-                    const itemRow = document.createElement('div');
-                    itemRow.className = 'flex justify-between items-center py-2';
-                    itemRow.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded text-xs">${qty}x</span>
-                            <span class="font-medium text-slate-700">${pkg.nombre}</span>
-                        </div>
-                        <span class="font-semibold text-slate-800">$${subtotal.toFixed(2)}</span>
-                    `;
-                    containerList.appendChild(itemRow);
-                }
-            });
-
-            totalElement.innerText = `$${total.toFixed(2)}`;
-            orderIdElement.innerText = Math.floor(1000 + Math.random() * 9000); // ID Aleatorio simulado
-            
-            const now = new Date();
-            timeElement.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            // Restablecer estado de pendiente
-            const statusBar = document.getElementById('status-bar');
-            statusBar.className = "bg-amber-500 text-white px-4 py-2 text-xs font-bold flex justify-between items-center tracking-wider uppercase";
-            statusBar.innerHTML = `<span><i class="fa-solid fa-clock mr-1"></i> Orden Pendiente</span> <span>${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
-
-            document.getElementById('btn-complete-order').disabled = false;
-            document.getElementById('btn-complete-order').className = "w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition duration-200 flex justify-center items-center gap-2";
-
-            // Mostrar el ticket
-            document.getElementById('order-card-empty').classList.add('hidden');
-            document.getElementById('order-card-content').classList.remove('hidden');
-        }
-
-        function markAsCompleted() {
-            const statusBar = document.getElementById('status-bar');
-            statusBar.className = "bg-emerald-600 text-white px-4 py-2 text-xs font-bold flex justify-between items-center tracking-wider uppercase";
-            statusBar.innerHTML = `<span><i class="fa-solid fa-circle-check mr-1"></i> Orden Atendida / Entregada</span>`;
-
-            const btn = document.getElementById('btn-complete-order');
-            btn.disabled = true;
-            btn.className = "w-full py-3 bg-slate-200 text-slate-400 font-bold rounded-xl cursor-not-allowed flex justify-center items-center gap-2";
-        }
-
-        function clearKitchenOrder() {
-            document.getElementById('order-card-empty').classList.remove('hidden');
-            document.getElementById('order-card-content').classList.add('hidden');
-        }
-
-        // 5. NAVEGACIÓN ENTRE SECCIONES
-        function switchTab(tab) {
-            const secCliente = document.getElementById('sec-cliente');
-            const secCocina = document.getElementById('sec-cocina');
-            const btnCliente = document.getElementById('nav-cliente');
-            const btnCocina = document.getElementById('nav-cocina');
-
-            if (tab === 'cliente') {
-                secCliente.classList.remove('hidden');
-                secCocina.classList.add('hidden');
-
-                btnCliente.className = "px-3 py-1.5 rounded-lg bg-white text-indigo-900 font-semibold shadow transition-all flex items-center gap-1.5";
-                btnCocina.className = "px-3 py-1.5 rounded-lg text-indigo-200 hover:text-white transition-all flex items-center gap-1.5";
-            } else {
-                secCliente.classList.add('hidden');
-                secCocina.classList.remove('hidden');
-
-                btnCocina.className = "px-3 py-1.5 rounded-lg bg-white text-indigo-900 font-semibold shadow transition-all flex items-center gap-1.5";
-                btnCliente.className = "px-3 py-1.5 rounded-lg text-indigo-200 hover:text-white transition-all flex items-center gap-1.5";
-            }
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
